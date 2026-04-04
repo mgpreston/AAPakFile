@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+      - "release-please--**"
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Full history required for Source Link
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: |
+          dotnet restore AAPakFile/AAPakFile.csproj
+          dotnet restore AAPakFile.Tests/AAPakFile.Tests.csproj
+
+      - name: Build
+        run: |
+          dotnet build AAPakFile/AAPakFile.csproj --no-restore --configuration Release
+          dotnet build AAPakFile.Tests/AAPakFile.Tests.csproj --no-restore --configuration Release
+
+      - name: Format check
+        run: |
+          dotnet format AAPakFile/AAPakFile.csproj --no-restore --verify-no-changes --severity warn
+          dotnet format AAPakFile.Tests/AAPakFile.Tests.csproj --no-restore --verify-no-changes --severity warn
+
+      - name: Test
+        run: >
+          dotnet test
+          --project AAPakFile.Tests/AAPakFile.Tests.csproj
+          --configuration Release
+          --no-build
+          --report-trx
+          --coverage
+          --coverage-output-format cobertura
+          --coverage-output coverage.xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v6
+        with:
+          files: "**/coverage.xml"
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: "**/*.trx"

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Override the net10.0 set by Directory.Build.props — WPF requires the -windows suffix. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>AAPakFile.Demo</RootNamespace>
+    <!-- WPF is not AOT-compatible. Override the library default. -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- Demo app — no package or docs needed. -->
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AAPakFile\AAPakFile.csproj" />
+  </ItemGroup>
+
+</Project>

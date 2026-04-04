@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>AAPakFile</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>AAPakFile</PackageId>
+    <!-- x-release-please-start-version -->
+    <Version>0.0.0</Version>
+    <!-- x-release-please-end -->
+    <Description>A library that allows reading and writing of ArcheAge package files (game_pak).</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>archeage;game-pak;pak;archive;aot;dotnet</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Make internal types visible to unit test assembly. -->
+    <InternalsVisibleTo Include="AAPakFile.Tests" />
+  </ItemGroup>
+
+</Project>

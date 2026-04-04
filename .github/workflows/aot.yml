@@ -1,0 +1,34 @@
+name: Native AOT
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  aot-test:
+    name: Native AOT Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore AAPakFile.Tests/AAPakFile.Tests.csproj
+
+      - name: Publish (Native AOT)
+        run: >
+          dotnet publish AAPakFile.Tests/AAPakFile.Tests.csproj
+          --configuration Release
+          --runtime linux-x64
+          --output publish
+          /p:PublishAot=true
+
+      - name: Run AOT tests
+        run: ./publish/AAPakFile.Tests

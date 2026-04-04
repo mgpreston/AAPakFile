@@ -1,0 +1,54 @@
+<Window x:Class="AAPakFile.Demo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AAPakFile Demo" Height="600" Width="900"
+        FontFamily="Segoe UI" FontSize="13">
+  <DockPanel>
+
+    <!-- Toolbar -->
+    <ToolBar DockPanel.Dock="Top" ToolBarTray.IsLocked="True">
+      <Button x:Name="OpenButton" Content="Open Package…" Padding="8,2" Click="OpenButton_Click" />
+      <Separator />
+      <Button x:Name="ExportAllButton" Content="Export All…" Padding="8,2"
+              Click="ExportAll_Click" IsEnabled="False" />
+      <Separator />
+      <Button x:Name="ImportFolderButton" Content="Import Folder…" Padding="8,2"
+              Click="ImportFolder_Click" IsEnabled="False" />
+      <Button x:Name="ImportZipButton" Content="Import ZIP…" Padding="8,2" Margin="4,0,0,0"
+              Click="ImportZip_Click" IsEnabled="False" />
+      <Separator />
+      <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="Gray"
+                 Text="No file open." />
+    </ToolBar>
+
+    <!-- Progress bar -->
+    <Border DockPanel.Dock="Bottom" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0" Background="#F5F5F5">
+      <StackPanel Orientation="Horizontal" Margin="6,3">
+        <ProgressBar x:Name="OperationProgress" Width="200" Height="14"
+                     Visibility="Collapsed" Minimum="0" Maximum="100" Margin="0,0,6,0" />
+        <TextBlock x:Name="ProgressLabel" Visibility="Collapsed"
+                   VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#333333" />
+        <Button x:Name="CancelButton" Content="Cancel" Padding="6,1"
+                Visibility="Collapsed" Click="Cancel_Click" />
+      </StackPanel>
+    </Border>
+
+    <!-- Tree -->
+    <TreeView x:Name="PackageTree" BorderThickness="0"
+              VirtualizingPanel.IsVirtualizing="True"
+              VirtualizingPanel.VirtualizationMode="Recycling"
+              PreviewMouseRightButtonDown="PackageTree_PreviewMouseRightButtonDown"
+              ContextMenuOpening="PackageTree_ContextMenuOpening">
+      <TreeView.ContextMenu>
+        <ContextMenu>
+          <MenuItem x:Name="ExportFileMenuItem"   Header="Export File…"    Click="ExportFile_Click" />
+          <MenuItem x:Name="ImportFileMenuItem"   Header="Import File…"    Click="ImportFile_Click" />
+          <MenuItem x:Name="DeleteFileMenuItem"   Header="Delete"          Click="DeleteFile_Click" />
+          <MenuItem x:Name="ExportFolderMenuItem" Header="Export Folder…"  Click="ExportFolder_Click" />
+          <MenuItem x:Name="AddFilesMenuItem"     Header="Add File(s)…"    Click="AddFiles_Click" />
+        </ContextMenu>
+      </TreeView.ContextMenu>
+    </TreeView>
+
+  </DockPanel>
+</Window>

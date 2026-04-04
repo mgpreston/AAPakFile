@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+<PropertyGroup>
+  <!-- Required by TUnit / Microsoft.Testing.Platform v2 -->
+  <OutputType>Exe</OutputType>
+  <IsPackable>false</IsPackable>
+  <IsAotCompatible>true</IsAotCompatible>
+  <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  <RootNamespace>AAPakFile</RootNamespace>
+  <!-- CS8767: TUnit mock generator emits non-nullable parameter for nullable optional; generator bug -->
+  <NoWarn>$(NoWarn);CS8767</NoWarn>
+</PropertyGroup>
+
+<ItemGroup>
+  <PackageReference Include="TUnit" />
+  <PackageReference Include="TUnit.Mocks" />
+
+  <ProjectReference Include="..\AAPakFile\AAPakFile.csproj" />
+</ItemGroup>
+
+<ItemGroup>
+  <Folder Include="TestResults\" />
+</ItemGroup>
+
+</Project>
