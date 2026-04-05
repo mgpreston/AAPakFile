@@ -51,7 +51,6 @@ internal static class FileTableHelper
         ReadOnlyMemory<byte> xlGamesKey = default, int fileTableStreamBufferSize = 80 * 1024,
         CancellationToken cancellationToken = default)
     {
-        const int headerBlockSize = 512;
         var fileRecordSize = Unsafe.SizeOf<PackedFileRecord>();
 
         using var decryptor = new Decryptor(xlGamesKey.Span);
@@ -81,9 +80,9 @@ internal static class FileTableHelper
         // using the same alignment formula as FileTableReader.
         var totalRecordCount = header.FileCount + header.ExtraFileCount;
         var fileLength = RandomAccess.GetLength(packageHandle);
-        var firstFileInfoOffset = fileLength - headerBlockSize - (long)fileRecordSize * totalRecordCount;
-        var dif = firstFileInfoOffset % 0x200;
-        firstFileInfoOffset -= dif; // Align backward to 512-byte boundary
+        var firstFileInfoOffset = fileLength - PackageFormat.BlockSize - (long)fileRecordSize * totalRecordCount;
+        var dif = firstFileInfoOffset % PackageFormat.BlockSize;
+        firstFileInfoOffset -= dif; // Align backward to PackageFormat.BlockSize boundary
 
         return new PackageEditState(header, files, extraFiles, firstFileInfoOffset);
     }
@@ -93,11 +92,10 @@ internal static class FileTableHelper
     /// </summary>
     /// <param name="packageStream">The stream representing the package.</param>
     /// <param name="xlGamesKey">The AES decryption key for the package.</param>
-    /// <param name="fileTableStreamBufferSize">The buffer size of the file stream.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A collection of file records.</returns>
     public static async Task<IEnumerable<PackedFileRecord>> LoadRecordsAsync(Stream packageStream,
-        ReadOnlyMemory<byte> xlGamesKey = default, int fileTableStreamBufferSize = 80 * 1024,
+        ReadOnlyMemory<byte> xlGamesKey = default,
         CancellationToken cancellationToken = default)
     {
         using var decryptor = new Decryptor(xlGamesKey.Span);
