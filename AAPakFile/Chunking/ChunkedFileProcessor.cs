@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
 using Microsoft.Win32.SafeHandles;
@@ -14,6 +14,18 @@ internal class ChunkedFileProcessor : IChunkedFileProcessor
         IChunkedFileProcessor.ProcessChunkDelegate<TState> ProcessChunkDelegate,
         IProgress<IChunkedFileProcessor.Progress>? ProgressReporter);
 
+    private readonly ChunkedFileProcessorOptions _options;
+
+    /// <summary>Initialises a new instance using the default <see cref="ChunkedFileProcessorOptions"/>.</summary>
+    public ChunkedFileProcessor() : this(ChunkedFileProcessorOptions.Default) { }
+
+    /// <summary>Initialises a new instance with explicit options.</summary>
+    /// <param name="options">The options controlling pipe buffer sizes and read block size.</param>
+    public ChunkedFileProcessor(ChunkedFileProcessorOptions options)
+    {
+        _options = options;
+    }
+
     /// <inheritdoc />
     [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
     public async Task<TState> ProcessAsync<TState>(SafeFileHandle packageHandle,
@@ -23,14 +35,14 @@ internal class ChunkedFileProcessor : IChunkedFileProcessor
     {
         var context = new Context<TState>(processChunkDelegate, progressReporter);
 
-        // TODO: Make the sizes configurable
-        var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10 * 1024 * 1024,
-            resumeWriterThreshold: 5 * 1024 * 1024));
+        var pipe = new Pipe(new PipeOptions(
+            pauseWriterThreshold: (long)_options.MaxBlockSize * 2,
+            resumeWriterThreshold: _options.MaxBlockSize));
 
         // Split the package contents into large chunks for efficient reading.
         var chunks = Chunker.SplitIntoChunks(fileRecords);
 
-        var readFromPackageIntoPipeTask = ReadFromPackage(pipe.Writer, chunks, packageHandle, cancellationToken);
+        var readFromPackageIntoPipeTask = ReadFromPackage(pipe.Writer, chunks, packageHandle, _options.MaxBlockSize, cancellationToken);
         var processChunksTask = ProcessChunksAsync(pipe.Reader, fileRecords, state, context, cancellationToken);
 
         await Task.WhenAll(readFromPackageIntoPipeTask, processChunksTask).ConfigureAwait(false);
@@ -40,10 +52,8 @@ internal class ChunkedFileProcessor : IChunkedFileProcessor
     }
 
     private static async Task ReadFromPackage(PipeWriter pipeWriter, IEnumerable<Chunker.ReadChunk> chunks,
-        SafeFileHandle packageHandle, CancellationToken cancellationToken)
+        SafeFileHandle packageHandle, int maxBlockSize, CancellationToken cancellationToken)
     {
-        const int maxPipeBlockSize = 5 * 1024 * 1024; //128 * 1024;
-
         try
         {
             foreach (var chunk in chunks)
@@ -54,7 +64,7 @@ internal class ChunkedFileProcessor : IChunkedFileProcessor
                 while (remaining > 0)
                 {
                     // Get a writable region from the pipe
-                    var sizeToRead = Math.Min(remaining, maxPipeBlockSize);
+                    var sizeToRead = (int)Math.Min(remaining, (long)maxBlockSize);
                     var memory = pipeWriter.GetMemory(sizeToRead)[..sizeToRead];
 
                     // Read directly into the pipe's memory

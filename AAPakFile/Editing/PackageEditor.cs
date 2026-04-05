@@ -36,6 +36,7 @@ public sealed class PackageEditor : IPackageEditor
     private readonly IFileTableWriter _fileTableWriter;
     private readonly IPackageHeaderSerializer _headerSerializer;
     private readonly PackageHeader _header;
+    private readonly int _fileCopyBufferSize;
 
     private readonly List<PackedFileRecord> _files;
     private readonly List<PackedFileRecord> _extraFiles;
@@ -44,13 +45,15 @@ public sealed class PackageEditor : IPackageEditor
     private long _firstFileInfoOffset;
 
     private PackageEditor(SafeFileHandle handle, Encryptor encryptor, IFileTableWriter fileTableWriter,
-        IPackageHeaderSerializer headerSerializer, PackageEditState state)
+        IPackageHeaderSerializer headerSerializer, PackageEditState state,
+        int fileCopyBufferSize = 80 * 1024)
     {
         _handle = handle;
         _encryptor = encryptor;
         _fileTableWriter = fileTableWriter;
         _headerSerializer = headerSerializer;
         _header = state.Header;
+        _fileCopyBufferSize = fileCopyBufferSize;
         _files = state.Files;
         _extraFiles = state.ExtraFiles;
         _firstFileInfoOffset = state.FirstFileInfoOffset;
@@ -76,6 +79,7 @@ public sealed class PackageEditor : IPackageEditor
     /// The path to the package file to create. If a file already exists at this path it is overwritten.
     /// </param>
     /// <param name="xlGamesKey">The AES key for the package. If empty, the default XLGames key is used.</param>
+    /// <param name="fileCopyBufferSize">The buffer size used for file copy operations. Defaults to 80 KiB.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A <see cref="PackageEditor"/> with exclusive read/write access to the new package.</returns>
     /// <exception cref="IOException">An I/O error occurred while creating the file.</exception>
@@ -89,7 +93,8 @@ public sealed class PackageEditor : IPackageEditor
     [SuppressMessage("Style", "IDE0060", Justification = "Public API")]
     [SuppressMessage("ReSharper", "UnusedParameter.Global", Justification = "Public API")]
     public static Task<PackageEditor> CreateAsync(string packagePath,
-        ReadOnlyMemory<byte> xlGamesKey = default, CancellationToken cancellationToken = default)
+        ReadOnlyMemory<byte> xlGamesKey = default, int fileCopyBufferSize = 80 * 1024,
+        CancellationToken cancellationToken = default)
     {
         var handle = File.OpenHandle(packagePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None,
             FileOptions.Asynchronous);
@@ -103,7 +108,8 @@ public sealed class PackageEditor : IPackageEditor
                 Files: [],
                 ExtraFiles: [],
                 FirstFileInfoOffset: 0);
-            return Task.FromResult(new PackageEditor(handle, encryptor, fileTableWriter, headerSerializer, state));
+            return Task.FromResult(new PackageEditor(handle, encryptor, fileTableWriter, headerSerializer, state,
+                fileCopyBufferSize));
         }
         catch
         {
@@ -117,6 +123,7 @@ public sealed class PackageEditor : IPackageEditor
     /// </summary>
     /// <param name="packagePath">The path to the package file.</param>
     /// <param name="xlGamesKey">The AES key for the package. If empty, the default XLGames key is used.</param>
+    /// <param name="fileCopyBufferSize">The buffer size used for file copy operations. Defaults to 80 KiB.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A <see cref="PackageEditor"/> with exclusive read/write access to the package.</returns>
     /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
@@ -128,7 +135,8 @@ public sealed class PackageEditor : IPackageEditor
     /// The directory portion of <paramref name="packagePath"/> does not exist.
     /// </exception>
     public static async Task<PackageEditor> OpenAsync(string packagePath,
-        ReadOnlyMemory<byte> xlGamesKey = default, CancellationToken cancellationToken = default)
+        ReadOnlyMemory<byte> xlGamesKey = default, int fileCopyBufferSize = 80 * 1024,
+        CancellationToken cancellationToken = default)
     {
         var handle = File.OpenHandle(packagePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None,
             FileOptions.Asynchronous);
@@ -140,7 +148,8 @@ public sealed class PackageEditor : IPackageEditor
             var state = await FileTableHelper
                 .LoadRecordsForEditingAsync(handle, xlGamesKey, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
-            return new PackageEditor(handle, encryptor, fileTableWriter, headerSerializer, state);
+            return new PackageEditor(handle, encryptor, fileTableWriter, headerSerializer, state,
+                fileCopyBufferSize);
         }
         catch
         {
@@ -240,9 +249,6 @@ public sealed class PackageEditor : IPackageEditor
     /// <exception cref="IOException">An I/O error occurred while writing to the package file.</exception>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        const int headerBlockSize = 512;
-        const int encryptedHeaderSize = 32;
-
         // Sort active files by offset so the on-disk table order matches what LoadRecordsAsync returns.
         // We sort a local copy only — mutating _files/_entriesList here would fire spurious Replace
         // events on the PackageTreeView (swapping entries with different names triggers remove+add
@@ -252,27 +258,27 @@ public sealed class PackageEditor : IPackageEditor
         var sortedFiles = _files.OrderBy(r => r.FileOffset).ToList();
 
         // Intentionally not disposing the file stream to avoid disposing the package file handle that we don't own
-        var stream = new FileStream(_handle, FileAccess.Write, bufferSize: 80 * 1024, isAsync: true);
+        var stream = new FileStream(_handle, FileAccess.Write, bufferSize: _fileCopyBufferSize, isAsync: true);
         stream.Seek(_firstFileInfoOffset, SeekOrigin.Begin);
 
         await _fileTableWriter.WriteFileRecordsAsync(stream, sortedFiles, cancellationToken).ConfigureAwait(false);
         await _fileTableWriter.WriteFileRecordsAsync(stream, _extraFiles, cancellationToken).ConfigureAwait(false);
 
-        // Pad to the next 512-byte boundary
+        // Pad to the next block boundary
         var position = stream.Position;
-        var dif = position % 512;
+        var dif = position % PackageFormat.BlockSize;
         if (dif > 0)
         {
-            var padding = new byte[512 - dif];
+            var padding = new byte[PackageFormat.BlockSize - dif];
             await stream.WriteAsync(padding, cancellationToken).ConfigureAwait(false);
         }
 
-        // Write the 512-byte header block: 32 encrypted bytes followed by 480 zero bytes
-        Span<byte> encryptedHeader = stackalloc byte[encryptedHeaderSize];
+        // Write the header block: PackageFormat.EncryptedHeaderSize encrypted bytes followed by zeroed padding
+        Span<byte> encryptedHeader = stackalloc byte[PackageFormat.EncryptedHeaderSize];
         _headerSerializer.Serialize(_header, _files.Count, _extraFiles.Count, encryptedHeader);
         await stream.WriteAsync(encryptedHeader.ToArray(), cancellationToken).ConfigureAwait(false);
 
-        var remainingHeaderBytes = new byte[headerBlockSize - encryptedHeaderSize];
+        var remainingHeaderBytes = new byte[PackageFormat.BlockSize - PackageFormat.EncryptedHeaderSize];
         await stream.WriteAsync(remainingHeaderBytes, cancellationToken).ConfigureAwait(false);
 
         await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -330,7 +336,7 @@ public sealed class PackageEditor : IPackageEditor
 
         // Append at the end of the data section
         var appendOffset = _firstFileInfoOffset;
-        var appendPadding = (int)((512 - dataLength % 512) % 512);
+        var appendPadding = (int)((PackageFormat.BlockSize - dataLength % PackageFormat.BlockSize) % PackageFormat.BlockSize);
         _firstFileInfoOffset += dataLength + appendPadding;
         return new Placement(appendOffset, appendPadding, existingIndexOrNull, null);
     }
@@ -421,7 +427,7 @@ public sealed class PackageEditor : IPackageEditor
         var placement = DeterminePlacement(name, sizeHint);
 
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-        using var bufferOwner = MemoryPool<byte>.Shared.Rent(80 * 1024);
+        using var bufferOwner = MemoryPool<byte>.Shared.Rent(_fileCopyBufferSize);
         var buffer = bufferOwner.Memory;
 
         var writeOffset = placement.Offset;
@@ -458,7 +464,7 @@ public sealed class PackageEditor : IPackageEditor
         var placement = DeterminePlacement(name, dataLength);
 
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-        using var bufferOwner = MemoryPool<byte>.Shared.Rent(80 * 1024);
+        using var bufferOwner = MemoryPool<byte>.Shared.Rent(_fileCopyBufferSize);
         var buffer = bufferOwner.Memory;
 
         var writeOffset = placement.Offset;
@@ -491,7 +497,7 @@ public sealed class PackageEditor : IPackageEditor
         var appendOffset = _firstFileInfoOffset;
 
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-        using var bufferOwner = MemoryPool<byte>.Shared.Rent(80 * 1024);
+        using var bufferOwner = MemoryPool<byte>.Shared.Rent(_fileCopyBufferSize);
         var buffer = bufferOwner.Memory;
 
         var writeOffset = appendOffset;
@@ -506,7 +512,7 @@ public sealed class PackageEditor : IPackageEditor
             totalWritten += bytesRead;
         }
 
-        var paddingSize = (int)((512 - totalWritten % 512) % 512);
+        var paddingSize = (int)((PackageFormat.BlockSize - totalWritten % PackageFormat.BlockSize) % PackageFormat.BlockSize);
         _firstFileInfoOffset = appendOffset + totalWritten + paddingSize;
 
         Span<byte> md5 = stackalloc byte[16];
