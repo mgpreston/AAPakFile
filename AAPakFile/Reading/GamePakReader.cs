@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 using AAPakFile.Core;
 
@@ -43,6 +44,7 @@ namespace AAPakFile.Reading;
 /// <see cref="PackageReaderEntry.ModifiedTime"/> return <see cref="DateTimeOffset.MinValue"/>.
 /// </para>
 /// </remarks>
+[ExcludeFromCodeCoverage]
 internal sealed class GamePakReader : IPackageReader
 {
     private readonly SafeFileHandle _handle;
