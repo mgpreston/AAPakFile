@@ -336,6 +336,7 @@ public static class PackageFile
     /// </summary>
     /// <param name="packagePath">The path of the package file to create.</param>
     /// <param name="xlGamesKey">The AES encryption key for the package. If empty, the default XLGames key is used.</param>
+    /// <param name="fileCopyBufferSize">The buffer size used for file copy operations. Defaults to 80 KiB.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>
     /// A <see cref="PackageEditor"/> that can be used to add files to the new package.
@@ -351,14 +352,16 @@ public static class PackageFile
     /// The directory portion of <paramref name="packagePath"/> does not exist.
     /// </exception>
     public static Task<PackageEditor> CreateEditorAsync(string packagePath,
-        ReadOnlyMemory<byte> xlGamesKey = default, CancellationToken cancellationToken = default) =>
-        PackageEditor.CreateAsync(packagePath, xlGamesKey, cancellationToken);
+        ReadOnlyMemory<byte> xlGamesKey = default, int fileCopyBufferSize = 80 * 1024,
+        CancellationToken cancellationToken = default) =>
+        PackageEditor.CreateAsync(packagePath, xlGamesKey, fileCopyBufferSize, cancellationToken);
 
     /// <summary>
     /// Opens the specified package file for editing with exclusive read/write access.
     /// </summary>
     /// <param name="packagePath">The path to the package file.</param>
     /// <param name="xlGamesKey">The AES decryption key for the package.</param>
+    /// <param name="fileCopyBufferSize">The buffer size used for file copy operations. Defaults to 80 KiB.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>
     /// A <see cref="PackageEditor"/> that can be used to add, replace, and delete files in the package.
@@ -374,8 +377,9 @@ public static class PackageFile
     /// The directory portion of <paramref name="packagePath"/> does not exist.
     /// </exception>
     public static Task<PackageEditor> OpenEditorAsync(string packagePath,
-        ReadOnlyMemory<byte> xlGamesKey = default, CancellationToken cancellationToken = default) =>
-        PackageEditor.OpenAsync(packagePath, xlGamesKey, cancellationToken);
+        ReadOnlyMemory<byte> xlGamesKey = default, int fileCopyBufferSize = 80 * 1024,
+        CancellationToken cancellationToken = default) =>
+        PackageEditor.OpenAsync(packagePath, xlGamesKey, fileCopyBufferSize, cancellationToken);
 
     /// <summary>
     /// Verifies the integrity of all files in the specified package by checking each file's MD5 hash.
@@ -443,6 +447,7 @@ public static class PackageFile
     /// <param name="packagePath">The path to the package file to compact.</param>
     /// <param name="xlGamesKey">The AES key for the package. If empty, the default XLGames key is used.</param>
     /// <param name="progress">A provider for progress updates.</param>
+    /// <param name="bufferSize">The buffer size used for data-shift and file-table write operations. Defaults to 80 KiB.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="IOException">An I/O error occurred while compacting the file.</exception>
     /// <exception cref="UnauthorizedAccessException">
@@ -454,9 +459,10 @@ public static class PackageFile
     /// </exception>
     public static async Task CompactInPlaceAsync(string packagePath,
         ReadOnlyMemory<byte> xlGamesKey = default, IProgress<CompactProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        int bufferSize = 80 * 1024, CancellationToken cancellationToken = default)
     {
         var compactor = new PackageCompactor();
-        await compactor.CompactInPlaceAsync(packagePath, xlGamesKey, progress, cancellationToken).ConfigureAwait(false);
+        await compactor.CompactInPlaceAsync(packagePath, xlGamesKey, progress, bufferSize,
+            cancellationToken).ConfigureAwait(false);
     }
 }

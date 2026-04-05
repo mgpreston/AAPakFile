@@ -22,7 +22,7 @@ public class PackageEditorTests
         {
             var invalidKey = new byte[5];
             await Assert.ThrowsAsync<CryptographicException>(async () =>
-                await PackageEditor.CreateAsync(path, invalidKey, cancellationToken));
+                await PackageEditor.CreateAsync(path, invalidKey, cancellationToken: cancellationToken));
         }
         finally
         {

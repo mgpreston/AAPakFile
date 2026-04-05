@@ -24,7 +24,7 @@ public static class ImporterExtensions
             IProgress<ImportProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
-            await using var editor = await PackageEditor.OpenAsync(packagePath, xlGamesKey, cancellationToken)
+            await using var editor = await PackageEditor.OpenAsync(packagePath, xlGamesKey, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             await importer.ImportAsync(editor, sourceFolder, progress, cancellationToken)
                 .ConfigureAwait(false);
@@ -46,7 +46,7 @@ public static class ImporterExtensions
             IProgress<ImportProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
-            await using var editor = await PackageEditor.CreateAsync(packagePath, xlGamesKey, cancellationToken)
+            await using var editor = await PackageEditor.CreateAsync(packagePath, xlGamesKey, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             await importer.ImportAsync(editor, sourceFolder, progress, cancellationToken)
                 .ConfigureAwait(false);
@@ -71,7 +71,7 @@ public static class ImporterExtensions
             IProgress<ImportProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
-            await using var editor = await PackageEditor.OpenAsync(packagePath, xlGamesKey, cancellationToken)
+            await using var editor = await PackageEditor.OpenAsync(packagePath, xlGamesKey, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             await importer.ImportAsync(editor, zipFilePath, progress, cancellationToken)
                 .ConfigureAwait(false);
@@ -93,7 +93,7 @@ public static class ImporterExtensions
             IProgress<ImportProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
-            await using var editor = await PackageEditor.CreateAsync(packagePath, xlGamesKey, cancellationToken)
+            await using var editor = await PackageEditor.CreateAsync(packagePath, xlGamesKey, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             await importer.ImportAsync(editor, zipFilePath, progress, cancellationToken)
                 .ConfigureAwait(false);
