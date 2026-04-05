@@ -94,7 +94,7 @@ internal sealed class GamePakReader : IPackageReader
     // end, then searches forward in expanding windows for the next "CryTek" magic.
     // This avoids a full linear scan of the file while still handling:
     //   - tightly-packed 0xFFFF0001 archives (≤ 512-byte gaps)
-    //   - large encrypted gaps between 0xFFFF0000 archives (~32 MB each)
+    //   - large encrypted gaps between 0xFFFF0000 archives (~32 MiB each)
     private static async Task<List<PackageReaderEntry>> ScanArchivesAsync(
         SafeFileHandle handle, CancellationToken ct)
     {
@@ -121,7 +121,7 @@ internal sealed class GamePakReader : IPackageReader
     }
 
     // Scans forward from `fromPos` for a valid CryTek header using expanding windows:
-    // 512 B → 4 KB → 64 KB → 1 MB, then a full streaming scan.
+    // 512 B → 4 KiB → 64 KiB → 1 MiB, then a full streaming scan.
     // Returns the absolute file offset of the header, or -1 if none is found.
     private static async Task<long> FindNextArchiveAsync(
         SafeFileHandle handle, long fromPos, long fileLength, CancellationToken ct)

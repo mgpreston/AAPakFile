@@ -35,7 +35,7 @@ public class FileImporter : IFileImporter
             var relativePath = Path.GetRelativePath(sourceFolder, filePath).Replace('\\', '/');
 
             // bufferSize: 1 disables FileStream's own internal buffer. The editor already rents an
-            // 80 KB pool buffer internally, so a second layer of buffering is wasteful.
+            // 80 KiB pool buffer internally, so a second layer of buffering is wasteful.
             // The stream is seekable, so the editor routes to AddOrReplaceSeekableAsync and uses
             // DeterminePlacement for in-place replace, slot reuse, or append as appropriate.
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read,
