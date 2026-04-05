@@ -27,19 +27,17 @@ public class FilePackageHeaderReader : IFilePackageHeaderReader
     /// <inheritdoc />
     public PackageHeader ReadHeader(SafeFileHandle packageHandle)
     {
-        const int headerSize = 32;
-
         var length = _reader.GetLength(packageHandle);
-        var headerPosition = length - 512;
+        var headerPosition = length - PackageFormat.BlockSize;
 
         if (headerPosition < 0)
         {
-            throw new InvalidDataException("File does not contain enough data. Must contain at least 512 bytes.");
+            throw new InvalidDataException($"File does not contain enough data. Must contain at least {PackageFormat.BlockSize} bytes.");
         }
 
-        Span<byte> buffer = stackalloc byte[headerSize];
+        Span<byte> buffer = stackalloc byte[PackageFormat.EncryptedHeaderSize];
         var totalRead = 0;
-        while (totalRead < buffer.Length)
+        while (totalRead < PackageFormat.EncryptedHeaderSize)
         {
             var read = _reader.Read(packageHandle, buffer[totalRead..], headerPosition + totalRead);
             if (read == 0)

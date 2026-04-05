@@ -9,19 +9,17 @@ public class StreamPackageHeaderReader(IPackageHeaderParser parser) : IStreamPac
     /// <inheritdoc />
     public PackageHeader ReadHeader(Stream packageStream)
     {
-        const int headerSize = 32;
-
-        // Package file contents are aligned to 512 byte boundaries. The last block contains the header.
-        var headerPosition = packageStream.Length - 512;
+        // Package file contents are aligned to PackageFormat.BlockSize byte boundaries. The last block contains the header.
+        var headerPosition = packageStream.Length - PackageFormat.BlockSize;
 
         if (headerPosition < 0)
         {
-            throw new InvalidDataException("Stream does not contain enough data. Must contain at least 512 bytes.");
+            throw new InvalidDataException($"Stream does not contain enough data. Must contain at least {PackageFormat.BlockSize} bytes.");
         }
 
         packageStream.Seek(headerPosition, SeekOrigin.Begin);
 
-        Span<byte> buffer = stackalloc byte[headerSize];
+        Span<byte> buffer = stackalloc byte[PackageFormat.EncryptedHeaderSize];
         packageStream.ReadExactly(buffer);
 
         return parser.Parse(buffer);
