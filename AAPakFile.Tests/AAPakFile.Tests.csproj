@@ -7,8 +7,7 @@
   <IsAotCompatible>true</IsAotCompatible>
   <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   <RootNamespace>AAPakFile</RootNamespace>
-  <!-- CS8767: TUnit mock generator emits non-nullable parameter for nullable optional; generator bug -->
-  <NoWarn>$(NoWarn);CS8767</NoWarn>
+
 </PropertyGroup>
 
 <ItemGroup>

@@ -38,7 +38,7 @@ public class ZipImporterTests
 
             editorMock.AddOrReplaceFileAsync(
                     Any<string>(), Any<Stream>(),
-                    Any<PackageWriteOptions>(), Any<CancellationToken>())
+                    Any<PackageWriteOptions?>(), Any<CancellationToken>())
                 .WasCalled(Times.Exactly(2));
         }
         finally
@@ -68,7 +68,7 @@ public class ZipImporterTests
             // Only the file entry, not the directory entry.
             editorMock.AddOrReplaceFileAsync(
                     Any<string>(), Any<Stream>(),
-                    Any<PackageWriteOptions>(), Any<CancellationToken>())
+                    Any<PackageWriteOptions?>(), Any<CancellationToken>())
                 .WasCalled(Times.Once);
         }
         finally
@@ -122,9 +122,9 @@ public class ZipImporterTests
             var editorMock = Mock.Of<IPackageEditor>();
             editorMock.AddOrReplaceFileAsync(
                     Any<string>(), Any<Stream>(),
-                    Any<PackageWriteOptions>(), Any<CancellationToken>())
-                .Callback(args =>
-                    capturedSizeHint = (args[2] as PackageWriteOptions)?.SizeHint);
+                    Any<PackageWriteOptions?>(), Any<CancellationToken>())
+                .Callback((string _, Stream __, PackageWriteOptions? options, CancellationToken ___) =>
+                    capturedSizeHint = options?.SizeHint);
 
             var importer = new ZipImporter();
             await importer.ImportAsync(editorMock.Object, zipPath,

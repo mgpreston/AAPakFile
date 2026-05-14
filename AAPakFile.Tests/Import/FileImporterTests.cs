@@ -30,7 +30,7 @@ public class FileImporterTests
 
             editorMock.AddOrReplaceFileAsync(
                     Any<string>(), Any<Stream>(),
-                    Any<PackageWriteOptions>(), Any<CancellationToken>())
+                    Any<PackageWriteOptions?>(), Any<CancellationToken>())
                 .WasCalled(Times.Exactly(2));
         }
         finally
@@ -54,8 +54,9 @@ public class FileImporterTests
             var editorMock = Mock.Of<IPackageEditor>();
             editorMock.AddOrReplaceFileAsync(
                     Any<string>(), Any<Stream>(),
-                    Any<PackageWriteOptions>(), Any<CancellationToken>())
-                .Callback(args => capturedNames.Add((string)args[0]!));
+                    Any<PackageWriteOptions?>(), Any<CancellationToken>())
+                .Callback((string name, Stream _, PackageWriteOptions? __, CancellationToken ___) =>
+                    capturedNames.Add(name));
 
             var importer = new FileImporter();
             await importer.ImportAsync(editorMock.Object, tempDir,
