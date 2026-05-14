@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="TUnit" Version="1.44.39" />
-    <PackageVersion Include="TUnit.Mocks" Version="1.21.30" />
+    <PackageVersion Include="TUnit.Mocks" Version="1.44.39" />
     <!-- Build tooling (CI only) -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
   </ItemGroup>
