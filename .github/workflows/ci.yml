@@ -51,7 +51,7 @@ jobs:
           --coverage-output coverage.xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           files: "**/coverage.xml"
           token: ${{ secrets.CODECOV_TOKEN }}
