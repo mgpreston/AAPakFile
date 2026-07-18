@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0  # Full history required for Source Link
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
