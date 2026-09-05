@@ -3,8 +3,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="TUnit" Version="1.65.68" />
-    <PackageVersion Include="TUnit.Mocks" Version="1.65.68" />
+    <PackageVersion Include="TUnit" Version="1.66.10" />
+    <PackageVersion Include="TUnit.Mocks" Version="1.66.10" />
     <!-- Build tooling (CI only) -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.400" />
   </ItemGroup>
