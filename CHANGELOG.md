@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/mgpreston/AAPakFile/compare/v2.0.0...v2.0.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* update Callback calls for TUnit.Mocks 1.44.39 typed API ([d5baeac](https://github.com/mgpreston/AAPakFile/commit/d5baeac4c69cf24dcc5e0374050809d7166400f2))
+
 ## [2.0.0](https://github.com/mgpreston/AAPakFile/compare/v1.0.0...v2.0.0) (2026-04-05)
 
 
